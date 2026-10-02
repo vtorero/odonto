@@ -84,7 +84,8 @@ class AuthController
 
         // Generar JWT
         $secret = $_ENV['JWT_SECRET'] ?? 'default_odontodesa_secret_key_2026';
-        $expiration = time() + (int)($_ENV['JWT_EXPIRATION_HOURS'] ?? 24) * 3600;
+        //$expiration = time() + (int)($_ENV['JWT_EXPIRATION_HOURS'] ?? 24) * 3600;
+        $expiration = time() + ((int)($_ENV['JWT_EXPIRATION_MINUTES'] ?? 30) * 60);
 
         $payload = [
             'iss' => 'odontodesa-api',
@@ -95,7 +96,7 @@ class AuthController
             'iat' => time(),
             'exp' => $expiration,
         ];
-
+           //$jwt='test';
         $jwt = JWT::encode($payload, $secret, 'HS256');
 
         unset($user['password_hash']);

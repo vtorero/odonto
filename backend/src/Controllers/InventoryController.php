@@ -23,8 +23,8 @@ class InventoryController
     public function getAll(Request $request, Response $response): Response
     {
         $stmt = $this->db->query("
-            SELECT * FROM inventory
-            ORDER BY category ASC, name ASC
+            SELECT * FROM inventory_items
+            ORDER BY  ID DESC
         ");
         $items = $stmt->fetchAll();
 
@@ -33,15 +33,16 @@ class InventoryController
             $minStock = (int)$it['min_stock'];
             return [
                 'id' => "inv-{$it['id']}",
+                'code' => "inv-{$it['sku']}",
                 'name' => $it['name'],
                 'category' => $it['category'],
                 'currentStock' => $stock,
                 'minStock' => $minStock,
-                'unit' => $it['unit'],
+                'unit_of_measure' => $it['unit_of_measure'],
                 'location' => $it['location'] ?? 'Almacén Central',
                 'expirationDate' => $it['expiration_date'] ?? null,
                 'supplier' => $it['supplier'] ?? 'Distribuidora Dental',
-                'costPerUnit' => (float)($it['cost_per_unit'] ?? 0),
+                'costPrice' => (float)($it['unit_cost'] ?? 0),
                 'isLowStock' => ($stock <= $minStock),
             ];
         }, $items);
@@ -64,23 +65,24 @@ class InventoryController
         }
 
         $stmt = $this->db->prepare("
-            INSERT INTO inventory (
-                name, category, current_stock, min_stock, unit,
-                location, expiration_date, supplier, cost_per_unit
+            INSERT INTO inventory_items (
+                sku,name, category, current_stock, min_stock, unit_of_measure,
+                location, expiration_date, supplier, unit_cost
             ) VALUES (
-                ?, ?, ?, ?, ?,
+                ?,?, ?, ?, ?, ?,
                 ?, ?, ?, ?
             )
         ");
 
         $stmt->execute([
+            $body['code'],
             $body['name'],
             $body['category'],
             (int)($body['currentStock'] ?? 0),
             (int)($body['minStock'] ?? 5),
             $body['unit'] ?? 'unidad',
-            $body['location'] ?? 'Gabinete 1',
-            $body['expirationDate'] ?? null,
+            $body['locationInClinic'] ?? 'Gabinete 1',
+            $body['expiryDate'] ?? null,
             $body['supplier'] ?? null,
             (float)($body['costPerUnit'] ?? 0),
         ]);
@@ -112,7 +114,7 @@ class InventoryController
         $delta = ($type === 'in') ? $quantity : -$quantity;
 
         $stmt = $this->db->prepare("
-            UPDATE inventory SET
+            UPDATE inventory_items SET
                 current_stock = GREATEST(0, current_stock + ?)
             WHERE id = ?
         ");
@@ -126,4 +128,41 @@ class InventoryController
         ]));
         return $response->withHeader('Content-Type', 'application/json');
     }
+
+
+    public function update(Request $request, Response $response, array $args): Response
+    {
+
+        $id = (int)str_replace('inv-', '', $args['id']);
+        $body = json_decode((string)$request->getBody(), true);
+
+        $permissionsJson = !empty($data['permissions']) ? json_encode($data['permissions'], JSON_UNESCAPED_UNICODE) : null;
+        $associatedPatId = !empty($data['associatedPatientId']) ? (int)str_replace('pat-', '', (string)$data['associatedPatientId']) : null;
+
+        $stmt = $this->db->prepare("
+            UPDATE inventory_items SET
+                name = ?, category = ?, current_stock = ?, min_stock = ?, unit_of_measure = ?,
+                location = ?, expiration_date = ?, supplier = ?, unit_cost = ?
+            WHERE id = ?
+        ");
+
+        $stmt->execute([
+            $body['name'],
+            $body['category'],
+            (int)($body['currentStock'] ?? 0),
+            (int)($body['minStock'] ?? 5),
+            $body['unit'] ?? 'unidad',
+            $body['locationInClinic'] ?? 'Gabinete 1',
+            $body['expiryDate'] ?? null,
+            $body['supplier'] ?? null,
+            (float)($body['costPerUnit'] ?? 0),
+            $id
+        ]);
+
+
+        $response->getBody()->write(json_encode($body, JSON_UNESCAPED_UNICODE));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+
 }

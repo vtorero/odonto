@@ -27,13 +27,13 @@ class AppointmentController
         $status = $params['status'] ?? null;
 
         $sql = "
-            SELECT a.*,
+           SELECT a.*,c.name as dentalChair,
                    CONCAT(p.first_name, ' ', p.last_name) AS patientName,
                    p.phone AS patientPhone,
-                   p.record_number AS recordNumber,
-                   CONCAT(d.first_name, ' ', d.last_name) AS doctorName
+                                 CONCAT(d.first_name, ' ', d.last_name) AS doctorName
             FROM appointments a
             JOIN patients p ON a.patient_id = p.id
+            JOIN cabinets c ON a.dental_chair = c.idcabinets
             LEFT JOIN doctors d ON a.doctor_id = d.id
             WHERE 1=1
         ";
@@ -48,30 +48,42 @@ class AppointmentController
             $bindings[':status'] = $status;
         }
 
-        $sql .= " ORDER BY a.date ASC, a.time ASC";
+        $sql .= " ORDER BY a.appointment_date ASC, a.start_time ASC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($bindings);
         $appointments = $stmt->fetchAll();
+
 
         $result = array_map(function ($a) {
             return [
                 'id' => "apt-{$a['id']}",
                 'patientId' => "pat-{$a['patient_id']}",
                 'patientName' => $a['patientName'],
-                'patientPhone' => $a['patientPhone'] ?? '',
-                'doctor' => $a['doctorName'] ?? 'Dr. Carlos Mendoza',
-                'date' => $a['date'],
-                'time' => substr($a['time'], 0, 5),
+                'patientPhone' => $a['patientPhone'] ?? '9999999',
+                'doctorName' => $a['doctorName'] ?? 'Dr. Carlos Mendoza',
+                'specialty'=> 'Endodoncia & Microcirugía Apical',
+                'reason' =>'test',
+                'date' => $a['appointment_date'],
+                'startTime' => substr($a['start_time'], 0, 5),
+                'endTime' => substr($a['end_time'], 0, 5),
                 'duration' => (int)($a['duration'] ?? 30),
+                'durationMinutes'=>(int) 45,
                 'type' => $a['type'] ?? 'Consulta General',
                 'status' => $a['status'] ?? 'scheduled',
                 'notes' => $a['notes'] ?? '',
-                'dentalChair' => $a['dental_chair'] ?? 'Sillón Principal 01'
-            ];
-        }, $appointments);
+                'dentalChair' => $a['dentalChair'] ?? 'Sillón Principal 01',
+                'cabinet'=>$a['dentalChair'] ?? 'Sillón Principal 01',
+                'procedureCategory'=>'Quirúrgico & Cirugía',
+                'reminderSent'=> true];
+            }
+            , $appointments);
+
+
+
 
         $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));
+
         return $response->withHeader('Content-Type', 'application/json');
     }
 
@@ -83,7 +95,8 @@ class AppointmentController
     {
         $body = json_decode((string)$request->getBody(), true);
 
-        if (empty($body['patientId']) || empty($body['date']) || empty($body['time'])) {
+
+        if (empty($body['patientId']) || empty($body['date']) || empty($body['startTime'])) {
             $response->getBody()->write(json_encode(['error' => 'Paciente, fecha y hora son obligatorios']));
             return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
@@ -92,24 +105,25 @@ class AppointmentController
 
         $stmt = $this->db->prepare("
             INSERT INTO appointments (
-                patient_id, doctor_id, date, time, duration,
-                type, status, notes, dental_chair
+                patient_id, doctor_id, appointment_date, start_time, end_time,
+                 status, notes, dental_chair,reason
             ) VALUES (
                 ?, ?, ?, ?, ?,
-                ?, ?, ?, ?
+                ?, ?, ?,?
             )
         ");
 
         $stmt->execute([
             $patientId,
-            $body['doctorId'] ?? null,
+            $body['doctorName'] ?? null,
             $body['date'],
-            $body['time'],
-            (int)($body['duration'] ?? 30),
-            $body['type'] ?? 'Consulta General',
+            $body['startTime'],
+            $body['endTime'],
+           // (int)($body['duration'] ?? 30),
             $body['status'] ?? 'scheduled',
             $body['notes'] ?? null,
-            $body['dentalChair'] ?? 'Sillón Principal 01'
+            $body['cabinet'] ?? 1,
+            $body['reason'] ?? ''
         ]);
 
         $newId = (int)$this->db->lastInsertId();
@@ -118,6 +132,31 @@ class AppointmentController
         $response->getBody()->write(json_encode($body, JSON_UNESCAPED_UNICODE));
         return $response->withStatus(201)->withHeader('Content-Type', 'application/json');
     }
+
+/**
+ * PUT ACTUALIZA ESTADO DE APPOINTMENT
+ */
+
+ public function estado(Request $request, Response $response ): Response
+ {
+
+    $body = json_decode((string)$request->getBody(), true);
+
+     $id = (int)str_replace('apt-', '',$body['id']);
+
+
+     $stmt = $this->db->prepare("
+         UPDATE appointments SET status = ? WHERE id = ?
+     ");
+
+     $stmt->execute([
+         $body['status'],
+         $id
+     ]);
+
+     $response->getBody()->write(json_encode(['success' => true, 'updatedId' => "apt-{$id}"]));
+     return $response->withHeader('Content-Type', 'application/json');
+ }
 
     /**
      * PUT /api/appointments/{id}

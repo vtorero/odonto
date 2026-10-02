@@ -26,12 +26,10 @@ class PatientController
         $search = $params['q'] ?? '';
 
         $sql = "
-            SELECT p.*,
-                   CONCAT(d.first_name, ' ', d.last_name) AS responsibleDoctor,
+                 SELECT p.*,
+                   d.id AS responsibleDoctor,
                    (SELECT COUNT(*) FROM appointments a WHERE a.patient_id = p.id AND a.status IN ('scheduled', 'confirmed')) AS pendingAppointmentsCount
-            FROM patients p
-            LEFT JOIN doctors d ON p.doctor_id = d.id
-        ";
+            FROM patients p LEFT JOIN doctors d ON p.responsible_doctor_id = d.id";
 
         if (!empty($search)) {
             $sql .= " WHERE p.first_name LIKE :s OR p.last_name LIKE :s OR p.id_number LIKE :s OR p.record_number LIKE :s ";
@@ -66,10 +64,10 @@ class PatientController
 
         $stmt = $this->db->prepare("
             SELECT p.*,
-                   CONCAT(d.first_name, ' ', d.last_name) AS responsibleDoctor,
+                   d.id as responsibleDoctor,
                    d.license_number AS doctorLicense
             FROM patients p
-            LEFT JOIN doctors d ON p.doctor_id = d.id
+            LEFT JOIN doctors d ON p.responsible_doctor_id = d.id
             WHERE p.id = ?
         ");
         $stmt->execute([$id]);
@@ -81,14 +79,14 @@ class PatientController
         }
 
         // 1. Obtener Odontograma
-        $odontogramStmt = $this->db->prepare("SELECT * FROM odontograms WHERE patient_id = ? ORDER BY version DESC LIMIT 1");
+        $odontogramStmt = $this->db->prepare("SELECT * FROM odontogram_teeth WHERE patient_id = ? ORDER BY updated_at DESC LIMIT 1");
         $odontogramStmt->execute([$id]);
         $odontogram = $odontogramStmt->fetch();
 
         // 2. Obtener Evolución Clínica & Entregas/Saldos
         $notesStmt = $this->db->prepare("
             SELECT cn.*, CONCAT(d.first_name, ' ', d.last_name) AS doctor_name
-            FROM clinical_notes cn
+            FROM clinical_evolutions cn
             LEFT JOIN doctors d ON cn.doctor_id = d.id
             WHERE cn.patient_id = ?
             ORDER BY cn.date DESC, cn.id DESC
@@ -127,14 +125,14 @@ class PatientController
 
         $stmt = $this->db->prepare("
             INSERT INTO patients (
-                record_number, first_name, last_name, id_number, birth_date,
+                 first_name, last_name, id_number, birth_date,
                 gender, phone, email, address, occupation,
-                blood_type, allergies, medical_conditions, current_medications,
+                blood_type, medicalhistory, medical_conditions, current_medications,
                 emergency_contact_name, emergency_contact_phone,
                 anamnesis_json, stomatological_exam_json, diagnosis_json, treatment_plan_summary_json,
-                notes, doctor_id
+                notes, responsible_doctor_id
             ) VALUES (
-                ?, ?, ?, ?, ?,
+                ?, ?, ?, ?,
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, ?,
                 ?, ?,
@@ -144,7 +142,7 @@ class PatientController
         ");
 
         $stmt->execute([
-            $recordNumber,
+           // $recordNumber,
             $data['firstName'],
             $data['lastName'],
             $data['idNumber'] ?? null,
@@ -155,7 +153,7 @@ class PatientController
             $data['address'] ?? null,
             $data['occupation'] ?? null,
             $data['bloodType'] ?? null,
-            $data['allergies'] ?? null,
+            isset($data['medicalhistory']) ? json_encode($data['medicalhistory'], JSON_UNESCAPED_UNICODE) : null,
             $data['medicalConditions'] ?? null,
             $data['currentMedications'] ?? null,
             $data['emergencyContactName'] ?? null,
@@ -196,10 +194,10 @@ class PatientController
             UPDATE patients SET
                 first_name = ?, last_name = ?, id_number = ?, birth_date = ?,
                 gender = ?, phone = ?, email = ?, address = ?, occupation = ?,
-                blood_type = ?, allergies = ?, medical_conditions = ?, current_medications = ?,
+                blood_type = ?,allergies = ?, medicalhistory = ?, medical_conditions = ?, current_medications = ?,
                 emergency_contact_name = ?, emergency_contact_phone = ?,
                 anamnesis_json = ?, stomatological_exam_json = ?, diagnosis_json = ?, treatment_plan_summary_json = ?,
-                notes = ?, doctor_id = ?
+                notes = ?, responsible_doctor_id = ?
             WHERE id = ?
         ");
 
@@ -215,6 +213,7 @@ class PatientController
             $data['occupation'] ?? null,
             $data['bloodType'] ?? null,
             $data['allergies'] ?? null,
+            isset($data['medicalhistory']) ? json_encode($data['medicalhistory'], JSON_UNESCAPED_UNICODE) : null,
             $data['medicalConditions'] ?? null,
             $data['currentMedications'] ?? null,
             $data['emergencyContactName'] ?? null,
@@ -224,7 +223,7 @@ class PatientController
             isset($data['diagnosis']) ? json_encode($data['diagnosis'], JSON_UNESCAPED_UNICODE) : null,
             isset($data['treatmentPlanSummary']) ? json_encode($data['treatmentPlanSummary'], JSON_UNESCAPED_UNICODE) : null,
             $data['notes'] ?? null,
-            $data['doctorId'] ?? null,
+            $data['responsibleDoctor'] ?? null,
             $id
         ]);
 
@@ -232,7 +231,6 @@ class PatientController
         $response->getBody()->write(json_encode($data, JSON_UNESCAPED_UNICODE));
         return $response->withHeader('Content-Type', 'application/json');
     }
-
     /**
      * DELETE /api/patients/{id}
      */
@@ -249,8 +247,7 @@ class PatientController
     private function formatPatient(array $p): array
     {
         return [
-            'id' => "pat-{$p['id']}",
-            'recordNumber' => $p['record_number'] ?? "OD-{$p['id']}",
+           'id' => "pat-{$p['id']}",
             'firstName' => $p['first_name'],
             'lastName' => $p['last_name'],
             'idNumber' => $p['id_number'] ?? '',
@@ -262,6 +259,7 @@ class PatientController
             'occupation' => $p['occupation'] ?? '',
             'bloodType' => $p['blood_type'] ?? '',
             'allergies' => $p['allergies'] ?? '',
+            'medicalhistory' => !empty($p['medicalhistory']) ? json_decode($p['medicalhistory'], true) : null,
             'medicalConditions' => $p['medical_conditions'] ?? '',
             'currentMedications' => $p['current_medications'] ?? '',
             'emergencyContactName' => $p['emergency_contact_name'] ?? '',
@@ -289,7 +287,7 @@ class PatientController
             'deliveries' => (float)($cn['deliveries'] ?? 0),
             'balance' => (float)($cn['balance'] ?? 0),
             'nextAppointment' => $cn['next_appointment'] ?? null,
-            'patientSignature' => (bool)$cn['patient_signature'],
+            'patientSignature' => (bool)$cn['signature_signed'],
         ];
     }
 

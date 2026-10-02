@@ -24,10 +24,12 @@ class OdontogramController
     {
         $patientId = (int)str_replace('pat-', '', $args['patientId']);
 
+
+
         $stmt = $this->db->prepare("
-            SELECT * FROM odontograms
+            SELECT * FROM odontogram_teeth
             WHERE patient_id = ?
-            ORDER BY version DESC
+            ORDER BY updated_at DESC
             LIMIT 1
         ");
         $stmt->execute([$patientId]);
@@ -53,7 +55,7 @@ class OdontogramController
         $result = [
             'id' => $record['id'],
             'patientId' => "pat-{$record['patient_id']}",
-            'version' => (int)$record['version'],
+            'version' => (int)$record['updated_at'],
             'data' => json_decode($record['data_json'], true) ?: [],
             'createdAt' => $record['created_at'],
             'updatedAt' => $record['updated_at']
@@ -72,17 +74,18 @@ class OdontogramController
         $patientId = (int)str_replace('pat-', '', $args['patientId']);
         $body = json_decode((string)$request->getBody(), true);
 
-        $odontogramData = $body['data'] ?? $body;
+        $odontogramData = $body['odontogram'] ?? $body;
         $dataJson = json_encode($odontogramData, JSON_UNESCAPED_UNICODE);
 
+
         // Verificar si existe para versionar o actualizar
-        $stmt = $this->db->prepare("SELECT id, version FROM odontograms WHERE patient_id = ? ORDER BY version DESC LIMIT 1");
+        $stmt = $this->db->prepare("SELECT id, version FROM odontogram_teeth WHERE patient_id = ? ORDER BY version DESC LIMIT 1");
         $stmt->execute([$patientId]);
         $existing = $stmt->fetch();
 
         if ($existing) {
             $updateStmt = $this->db->prepare("
-                UPDATE odontograms SET
+                UPDATE odontogram_teeth SET
                     data_json = ?,
                     version = version + 1,
                     updated_at = NOW()
@@ -93,7 +96,7 @@ class OdontogramController
             $id = $existing['id'];
         } else {
             $insertStmt = $this->db->prepare("
-                INSERT INTO odontograms (patient_id, data_json, version)
+                INSERT INTO odontogram_teeth (patient_id, data_json, version)
                 VALUES (?, ?, 1)
             ");
             $insertStmt->execute([$patientId, $dataJson]);
