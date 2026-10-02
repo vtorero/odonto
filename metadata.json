@@ -1,0 +1,6 @@
+{
+  "name": "DentalCare Pro - Sistema Dental Integral",
+  "description": "Sistema completo para clínicas dentales: gestión de usuarios y roles (Admin, Odontólogo, Asistente, Paciente), citas y agenda, odontograma FDI e historia clínica oficial Odontodesa (2 páginas A4), planes de tratamiento con tarifario estándar, pagos, inventario, facturación y backend Slim 4 + MySQL.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
