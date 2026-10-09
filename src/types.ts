@@ -390,3 +390,116 @@ export interface AuditLogEntry {
   details: string;
   ipAddress?: string;
 }
+
+export interface InterceptiveGeneralAnamnesis {
+  consultationReason?: string;
+  parentExpectations?: string;
+  systemicDiseases?: string;
+  allergies?: string;
+  hospitalizationsOrSurgeries?: string;
+  previousDentalExperience?: string;
+  dentalTraumaHistory?: string;
+  gestationType?: 'termino' | 'prematuro' | 'postermino';
+  birthComplications?: string;
+  lactationType?: 'materna' | 'biberon' | 'mixta';
+  lactationDurationMonths?: number | string;
+  familyPrognathism?: boolean;
+  familyOpenBite?: boolean;
+  familyCrowding?: boolean;
+  familyClassII?: boolean;
+  familyNotes?: string;
+  digitalSuction?: boolean;
+  digitalSuctionDetails?: string;
+  pacifierUse?: boolean;
+  pacifierDetails?: string;
+  lipSucking?: boolean;
+  objectSucking?: boolean;
+  habitAgeStopped?: string;
+  breathingPattern?: 'nasal' | 'bucal' | 'mixto';
+  snoring?: boolean;
+  sleepApnea?: boolean;
+  droolingOnPillow?: boolean;
+  tonsilsOrAdenoids?: boolean;
+  allergicRhinitis?: boolean;
+  swallowingPattern?: 'normal' | 'atipica' | 'infantil';
+  tongueInterposition?: 'ninguna' | 'anterior' | 'lateral' | 'ambas';
+  perioralContraction?: boolean;
+  chewingPattern?: 'bilateral' | 'unilateral_derecha' | 'unilateral_izquierda';
+  phoneticDifficulties?: boolean;
+  phonemesAffected?: string;
+  nocturnalBruxism?: boolean;
+  diurnalBruxism?: boolean;
+  onychophagy?: boolean;
+  objectBiting?: boolean;
+  cheilophagy?: boolean;
+  orofacialTrauma?: boolean;
+  traumaDescription?: string;
+  prematureToothLoss?: boolean;
+  prematureLossPieces?: string;
+  spaceMaintainerUsed?: boolean;
+  franklScale?: 'def_positivo' | 'positivo' | 'negativo' | 'def_negativo';
+  cooperationNotes?: string;
+  heightWeightPercentile?: string;
+  pubertalGrowthPhase?: string;
+}
+
+export interface InterceptiveFacialAnalysis {
+  facialBiotype?: 'mesofacial' | 'dolicofacial' | 'braquifacial';
+  facialSymmetry?: 'simetrico' | 'asimetria_mandibular_der' | 'asimetria_mandibular_izq' | 'asimetria_mentoniana';
+  symmetryNotes?: string;
+  lowerThirdProportion?: 'proporcional' | 'aumentado' | 'disminuido';
+  sagittalProfile?: 'recto' | 'convexo' | 'concavo';
+  nasolabialAngle?: 'normal' | 'agudo' | 'obtuso';
+  mentolabialSulcus?: 'normal' | 'marcado' | 'borrado';
+  lipCompetence?: 'competente' | 'incompetente' | 'hipertonico';
+  smileLine?: 'normal' | 'gingival' | 'baja';
+  gingivalExposureMm?: number | string;
+  buccalCorridors?: 'adecuados' | 'amplios' | 'estrechos';
+  chinPosition?: 'centrado' | 'desviado_der' | 'desviado_izq' | 'retruido' | 'protruido';
+  gonialAngle?: 'normal' | 'aumentado' | 'disminuido';
+}
+
+export interface InterceptiveOcclusalAnalysis {
+  dentitionType?: 'decidua' | 'mixta_1ra' | 'mixta_2da' | 'permanente_temprana';
+  molarRelationRight?: 'clase_I' | 'clase_II' | 'clase_III' | 'plano_recto' | 'escalon_mesial' | 'escalon_distal';
+  molarRelationLeft?: 'clase_I' | 'clase_II' | 'clase_III' | 'plano_recto' | 'escalon_mesial' | 'escalon_distal';
+  canineRelationRight?: 'clase_I' | 'clase_II' | 'clase_III' | 'no_erupcionado';
+  canineRelationLeft?: 'clase_I' | 'clase_II' | 'clase_III' | 'no_erupcionado';
+  transverseRelation?: 'normal' | 'cruzada_unilateral_der' | 'cruzada_unilateral_izq' | 'cruzada_bilateral' | 'tijera_brodie';
+  archFormUpper?: 'parabolica' | 'triangular_ojival' | 'cuadrada';
+  archFormLower?: 'parabolica' | 'triangular_ojival' | 'cuadrada';
+  overbiteType?: 'normal' | 'profunda' | 'abierta' | 'borde_a_borde';
+  overbiteMm?: number | string;
+  overjetType?: 'normal' | 'aumentado' | 'disminuido' | 'cruzada_anterior';
+  overjetMm?: number | string;
+  upperMidlineDev?: 'centrada' | 'desviada_der' | 'desviada_izq';
+  upperMidlineMm?: number | string;
+  lowerMidlineDev?: 'centrada' | 'desviada_der' | 'desviada_izq';
+  lowerMidlineMm?: number | string;
+  curveOfSpee?: 'plana' | 'moderada' | 'acentuada';
+  rcMicCoincident?: boolean;
+  rcMicSlideDetails?: string;
+  atmStatus?: 'asintomatica' | 'chasquido' | 'crepitacion' | 'dolor_palpacion';
+  mandibularDeviationOnOpen?: 'recta' | 'deflexion_der' | 'deflexion_izq' | 'bayoneta_s';
+  primateSpacesPresent?: boolean;
+  crowdingUpper?: 'ninguno' | 'leve' | 'moderado' | 'severo';
+  crowdingLower?: 'ninguno' | 'leve' | 'moderado' | 'severo';
+  frenumUpperAbnormal?: boolean;
+  ankyloglossiaLingualFrenum?: boolean;
+  skeletalDiagnosis?: string;
+  dentalDiagnosis?: string;
+  functionalDiagnosis?: string;
+  indicatedAppliances?: string[];
+  treatmentPlanNotes?: string;
+  treatmentTimingMonths?: number | string;
+  reevaluationDate?: string;
+}
+
+export interface InterceptiveAnamnesis {
+  general: InterceptiveGeneralAnamnesis;
+  facial: InterceptiveFacialAnalysis;
+  occlusal: InterceptiveOcclusalAnalysis;
+  evaluationDate?: string;
+  evaluatorDoctor?: string;
+  updatedAt?: string;
+}

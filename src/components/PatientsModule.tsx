@@ -41,6 +41,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { InterceptiveAnamnesisGuide } from './InterceptiveAnamnesisGuide';
 
 interface PatientsModuleProps {
   patients: Patient[];
@@ -154,7 +155,7 @@ useEffect(() => {
 
 
   const [activeTab, setActiveTab] = useState<
-    'history' | 'odontogram' | 'treatments' | 'notes' | 'invoices' | 'appointments'
+    'history' | 'odontogram' | 'treatments' | 'notes' | 'invoices' | 'appointments' | ''
   >('history');
 
   // Modals
@@ -709,9 +710,8 @@ useEffect(() => {
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  Historia Clínica Oficial
+                  Historia Clínica
                   <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">
-                    Odontodesa (2 Pág)
                   </span>
                 </button>
                 <button
@@ -725,6 +725,22 @@ useEffect(() => {
                 >
                   Odontograma FDI
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('interceptive')}
+                  className={`pb-3 px-3 text-xs font-bold border-b-2 transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                    activeTab === 'interceptive'
+                      ? 'border-sky-600 text-sky-600'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Stethoscope className="w-3.5 h-3.5" />
+                  Anamnesis Interceptiva
+                  <span className="bg-sky-100 text-sky-800 text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">
+
+                  </span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setActiveTab('treatments')}
@@ -780,6 +796,15 @@ useEffect(() => {
                   Citas ({patientAppointments.length})
                 </button>
               </div>
+                 {/* Tab: Guía de Anamnesis de Ortodoncia Interceptiva (PDF) */}
+                 {activeTab === 'interceptive' && selectedPatient && (
+                <InterceptiveAnamnesisGuide
+                  patient={selectedPatient}
+                  clinicSettings={clinicSettings}
+                  onSavePatient={onSavePatient}
+                  onBackToHistory={() => setActiveTab('history')}
+                />
+              )}
 
               {/* Tab 0: Official Odontodesa Clinical History (2 Pages) */}
               {activeTab === 'history' && selectedPatient && (
