@@ -28,6 +28,7 @@ import {
   AuditLogEntry,
   UserRole,
 } from './types';
+
 import { DashboardModule } from './components/DashboardModule';
 import { PatientsModule } from './components/PatientsModule';
 import { AppointmentsModule } from './components/AppointmentsModule';
@@ -63,7 +64,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { api } from './services/api';
-
+import { ToastContainer, toast } from 'react-toastify';
 
 type ActiveTab =
   | 'dashboard'
@@ -647,6 +648,7 @@ export default function App() {
         onLogin={handleLogin}
       />
     );
+
   }
 
   return (
@@ -1298,6 +1300,9 @@ export default function App() {
       </header>
 
       {/* Main App Content View Container */}
+      <div>
+       <ToastContainer position="top-right" aria-label={undefined} />
+    </div>
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Security Guard: Patient attempting to view non-portal sections */}
         {currentUser.role === 'patient' && activeTab !== 'patient-portal' && (
@@ -1499,5 +1504,6 @@ export default function App() {
         patients={currentUser.role === 'patient' && currentPatientRecord ? [currentPatientRecord] : patients}
       />
     </div>
-  );
+
+ );
 }

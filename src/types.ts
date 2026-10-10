@@ -218,7 +218,7 @@ export interface InventoryItem {
   costPrice: number;
   supplier: string;
   batchNumber: string;
-  expiryDate: string; // YYYY-MM-DD
+  expirationDate: string; // YYYY-MM-DD
   lastRestockedDate: string;
   locationInClinic: string; // 'Gabinete 1 - Cajón 3', 'Almacén Central', etc.
 }

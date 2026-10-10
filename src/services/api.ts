@@ -114,6 +114,60 @@ async updateAppointmentestado(appointment: Appointment): Promise<Appointment> {
  * @returns
  */
 
+/**
+ *
+ * @param item actializar inventario
+ * @returns /inventory/{id}/movement
+ */
+
+async movementInventory(item:any):Promise<any>{
+  const endpoint = `${API_BASE_URL}/inventory/${item.id}/movement`
+  const res = await fetch(endpoint, {
+    method:'POST',
+    headers: this.getHeaders(),
+    body: JSON.stringify(item),
+  });
+  if (res.status === 401) {
+    localStorage.removeItem('token');
+    window.location.reload();
+  }
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(
+      errorText || 'Error al guardar datos del item'
+    );
+  }
+  return await res.json();
+
+}
+
+
+async deleteInventoryItem(id:string): Promise<string> {
+
+    const endpoint = `${API_BASE_URL}/inventory/${id}`
+
+
+
+
+  const res = await fetch(endpoint, {
+    method:'DELETE',
+    headers: this.getHeaders(),
+    body: JSON.stringify(id),
+  });
+  if (res.status === 401) {
+    //localStorage.removeItem('token');
+    //window.location.reload();
+  }
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(
+      errorText || 'Error al guardar datos del item'
+    );
+  }
+  return await res.json();
+}
+
 async saveInventoryItem(item:InventoryItem): Promise<InventoryItem> {
 
   const isUpdate = item.id && !item.id.startsWith('mat-');

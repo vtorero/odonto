@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2'
 import {
   InventoryItem,
   InventoryMovement,
   MaterialCategory,
   ClinicSettings,
 } from '../types';
+
 import {
-  Package,
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
@@ -51,7 +52,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
   movements,
   clinicSettings,
   onSaveItem,
-  onDeleteItem,
+  //onDeleteItem,
   onRecordMovement,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -88,7 +89,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
       selectedCategory === 'all' || item.category === selectedCategory;
 
     const isLow = item.currentStock <= item.minStock;
-    const itemExpiry = new Date(item.expiryDate);
+    const itemExpiry = new Date(item.expirationDate);
     const isExpiring = itemExpiry <= ninetyDaysFromNow;
 
     if (filterStockStatus === 'low_stock') return matchesSearch && matchesCategory && isLow;
@@ -99,7 +100,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
   // Calculate high level metrics
   const totalItemsCount = inventory.length;
   const lowStockCount = inventory.filter((i) => i.currentStock <= i.minStock).length;
-  const expiringCount = inventory.filter((i) => new Date(i.expiryDate) <= ninetyDaysFromNow).length;
+  const expiringCount = inventory.filter((i) => new Date(i.expirationDate) <= ninetyDaysFromNow).length;
   const totalValuation = inventory.reduce((acc, i) => acc + i.currentStock * i.costPrice, 0);
 
   const handleOpenNewItem = () => {
@@ -123,7 +124,6 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
 
   const handleSaveItemForm =  async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(editingItem)
     if (!editingItem?.name || !editingItem?.category) return;
 
     const itemToSave: InventoryItem = {
@@ -138,19 +138,25 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
       costPrice: Number(editingItem.costPrice) || 0,
       supplier: editingItem.supplier || 'Distribuidor Dental',
       batchNumber: editingItem.batchNumber || 'LOT-GENERAL',
-      expiryDate: editingItem.expiryDate || '2028-01-01',
+      expirationDate: editingItem.expirationDate || '2028-01-01',
       lastRestockedDate: editingItem.lastRestockedDate || new Date().toISOString().split('T')[0],
       locationInClinic: editingItem.locationInClinic || 'Gabinete 1',
     };
 
-    const respuesta = await api.saveInventoryItem(itemToSave);
+    const respuesta:any = await api.saveInventoryItem(itemToSave);
     console.log(respuesta);
     onSaveItem(itemToSave);
     setShowItemModal(false);
-
+    Swal.fire({
+      title: 'Resultado',
+      text: respuesta.mensaje,
+      icon: 'success',
+      confirmButtonText: 'Aceptar'
+    });
+    api.getInventory();
   };
 
-  const handleExecuteStockMovement = (e: React.FormEvent) => {
+  const handleExecuteStockMovement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItemForStock || stockDelta <= 0) return;
 
@@ -188,8 +194,34 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
     };
 
     onRecordMovement(movement);
+    const resp =await api.movementInventory(movement);
+    console.log(resp);
+
     setShowStockModal(false);
     setStockReason('');
+  };
+
+
+  const onDeleteItem = async (id:string)=> {
+     console.log(id)
+
+     const resultado = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¡No podrás revertir esta acción!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+    });
+
+    if (resultado.isConfirmed) {
+          await api.deleteInventoryItem(id);
+
+    }
+    api.getInventory();
   };
 
   return (
@@ -433,7 +465,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                         </td>
 
                         <td className="py-3.5 px-3 text-slate-600 text-[11px]">
-                          {item.location}
+                          {item.locationInClinic}
                         </td>
 
                         <td className="py-3.5 px-3 text-right font-bold text-slate-900">
@@ -691,8 +723,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                   <label className="font-semibold text-slate-700 block mb-1">Fecha de Vencimiento</label>
                   <input
                     type="date"
-                    value={editingItem.expiryDate || '2028-01-01'}
-                    onChange={(e) => setEditingItem({ ...editingItem, expiryDate: e.target.value })}
+                    value={editingItem.expirationDate || '2028-01-01'}
+                    onChange={(e) => setEditingItem({ ...editingItem, expirationDate: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg"
                   />
                 </div>
@@ -736,6 +768,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                 </button>
               </div>
             </form>
+
           </div>
         </div>
       )}
