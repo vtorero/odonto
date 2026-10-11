@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import Swal from 'sweetalert2'
 import {
   InventoryItem,
@@ -48,7 +48,7 @@ const CATEGORIES: MaterialCategory[] = [
 ];
 
 export const InventoryModule: React.FC<InventoryModuleProps> = ({
-  inventory,
+  //inventory,
   movements,
   clinicSettings,
   onSaveItem,
@@ -59,6 +59,22 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [filterStockStatus, setFilterStockStatus] = useState<'all' | 'low_stock' | 'expiring_soon'>('all');
   const [activeTab, setActiveTab] = useState<'catalog' | 'movements'>('catalog');
+
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+
+  const loadInventory = async () => {
+   try {
+     const data = await api.getInventory();
+     setInventory(data);
+   } catch (error) {
+     console.error("Error cargando invetory:", error);
+     setInventory([]);
+   }
+ };
+
+ useEffect(() => {
+   loadInventory();
+  }, []);
 
   // Modals
   const [showItemModal, setShowItemModal] = useState(false);
@@ -153,7 +169,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
       icon: 'success',
       confirmButtonText: 'Aceptar'
     });
-    api.getInventory();
+    loadInventory()
   };
 
   const handleExecuteStockMovement = async (e: React.FormEvent) => {
@@ -196,7 +212,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
     onRecordMovement(movement);
     const resp =await api.movementInventory(movement);
     console.log(resp);
-
+    loadInventory();
     setShowStockModal(false);
     setStockReason('');
   };
@@ -221,7 +237,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
           await api.deleteInventoryItem(id);
 
     }
-    api.getInventory();
+    loadInventory();
   };
 
   return (
@@ -870,3 +886,4 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
     </div>
   );
 };
+

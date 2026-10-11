@@ -146,17 +146,14 @@ async deleteInventoryItem(id:string): Promise<string> {
 
     const endpoint = `${API_BASE_URL}/inventory/${id}`
 
-
-
-
   const res = await fetch(endpoint, {
     method:'DELETE',
     headers: this.getHeaders(),
     body: JSON.stringify(id),
   });
   if (res.status === 401) {
-    //localStorage.removeItem('token');
-    //window.location.reload();
+    localStorage.removeItem('token');
+    window.location.reload();
   }
 
   if (!res.ok) {
