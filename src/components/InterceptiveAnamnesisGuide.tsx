@@ -26,6 +26,7 @@ import {
   User,
   Calendar,
 } from 'lucide-react';
+import { api } from '../services/api';
 
 interface InterceptiveAnamnesisGuideProps {
   patient: Patient;
@@ -61,7 +62,7 @@ export const InterceptiveAnamnesisGuide: React.FC<InterceptiveAnamnesisGuideProp
   // Initialize default anamnesis or fallback values
   const defaultAnamnesis: InterceptiveAnamnesis = {
     evaluationDate: new Date().toISOString().split('T')[0],
-    evaluatorDoctor: patient.responsibleDoctor || clinicSettings.doctors[0]?.name || 'Odontopediatra / Ortodoncista',
+    evaluatorDoctor: patient.responsibleDrName || clinicSettings.doctors[0]?.name || 'Odontopediatra / Ortodoncista',
     general: {
       consultationReason: patient.consultationReason || 'Evaluación de recambio dentario y desarrollo de maxilares.',
       parentExpectations: 'Corrección temprana de mordida y prevención de apiñamiento severo.',
@@ -211,13 +212,19 @@ export const InterceptiveAnamnesisGuide: React.FC<InterceptiveAnamnesisGuideProp
     updateOcclusal('indicatedAppliances', updated);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const updatedPatient: Patient = {
       ...patient,
       interceptiveAnamnesis: anamnesisData,
     };
+
+    //console.log(updatedPatient);
+    const respuesta = await api.savePatient(updatedPatient);
+    //onSavePatient(respuesta);
     onSavePatient(updatedPatient);
-    console.log(updatedPatient);
+    //onSavePatient(patientToSave);
+     //await loadPatients();
+
     setIsSavedRecently(true);
     setTimeout(() => setIsSavedRecently(false), 3000);
   };
@@ -229,7 +236,7 @@ export const InterceptiveAnamnesisGuide: React.FC<InterceptiveAnamnesisGuideProp
   const loadExampleCase = () => {
     setAnamnesisData({
       evaluationDate: new Date().toISOString().split('T')[0],
-      evaluatorDoctor: clinicSettings.doctors[0]?.name || 'Dra. Especialista Ortodoncia',
+      evaluatorDoctor: patient.responsibleDrName || 'Dra. Especialista Ortodoncia',
       general: {
         consultationReason: 'Padres preocupados porque el niño duerme con la boca abierta y los dientes superiores muerden por dentro.',
         parentExpectations: 'Descruzar la mordida y guiar correctamente la erupción de los nuevos dientes.',

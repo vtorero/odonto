@@ -73,6 +73,7 @@ export interface Patient {
   guardianName?: string; // Apoderado
   birthPlace?: string; // Lugar de Nacimiento
   responsibleDoctor?: number; // Profesional Responsable
+  responsibleDrName?:string;
   consultationReason?: string; // Motivo de Consulta
   lastDentalVisit?: string; // Última Consulta al Dentista
   observations?: string; // Observaciones

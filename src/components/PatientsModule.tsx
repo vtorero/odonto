@@ -829,10 +829,9 @@ useEffect(() => {
                     }
                   }}
 
-             /*
-                  onSaveClinicalNote={(note) => {
+                        onSaveClinicalNote={(note) => {
                     if (onSaveClinicalNote) onSaveClinicalNote(note);
-                  }}*/
+                  }}
                 />
               )}
 

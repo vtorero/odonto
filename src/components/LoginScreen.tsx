@@ -159,7 +159,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 Sistema Clínico & Historia Odontológica Integral
               </h2>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Plataforma integral con Historia Clínica Oficial Odontodesa, Odontograma interactivo FDI, agenda de citas por sillón, presupuestos y control de insumos.
+                Plataforma integral con Historia Clínica Odontodesa, Odontograma interactivo FDI, agenda de citas por sillón, presupuestos y control de insumos.
               </p>
             </div>
 
@@ -231,7 +231,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     required
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="Ej. admin.elena, dr.carlos, asist.lucia..."
+                    placeholder="Ej. admin"
                     className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-all font-medium text-slate-900"
                   />
                 </div>

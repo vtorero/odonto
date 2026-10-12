@@ -993,7 +993,7 @@ export function UsersModule({
                 <div className="text-right">
                   <span className="text-[11px] text-slate-400 block">Doctor Tratante</span>
                   <span className="text-sm font-bold text-teal-300">
-                    {selectedPatientData?.responsibleDoctor || clinicSettings.doctors[0]?.first_name || 'Dr. Carlos Mendoza'}
+                    {selectedPatientData?.responsibleDrName}
                   </span>
                 </div>
               </div>
