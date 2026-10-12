@@ -236,6 +236,13 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
     if (resultado.isConfirmed) {
           await api.deleteInventoryItem(id);
 
+          Swal.fire({
+            title: "Aviso",
+            text: "Producto eliminado correctamente",
+            icon: "success",
+             confirmButtonText: 'Aceptar'
+            });
+
     }
     loadInventory();
   };
