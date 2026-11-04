@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import {
   Patient,
   ClinicSettings,
-  InterceptiveAnamnesis,
   InterceptiveGeneralAnamnesis,
   InterceptiveFacialAnalysis,
   InterceptiveOcclusalAnalysis,
@@ -27,6 +26,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { InterceptiveAnamnesis } from '../types';
 
 interface InterceptiveAnamnesisGuideProps {
   patient: Patient;
@@ -64,7 +64,8 @@ export const InterceptiveAnamnesisGuide: React.FC<InterceptiveAnamnesisGuideProp
     evaluationDate: new Date().toISOString().split('T')[0],
     evaluatorDoctor: patient.responsibleDrName || clinicSettings.doctors[0]?.name || 'Odontopediatra / Ortodoncista',
     general: {
-      consultationReason: patient.consultationReason || 'Evaluación de recambio dentario y desarrollo de maxilares.',
+      //patient.interceptiveAnamnesis.general.consultationReason
+      consultationReason:  'Revision',
       parentExpectations: 'Corrección temprana de mordida y prevención de apiñamiento severo.',
       gestationType: 'termino',
       lactationType: 'materna',
@@ -144,18 +145,46 @@ export const InterceptiveAnamnesisGuide: React.FC<InterceptiveAnamnesisGuideProp
     },
   };
 
-  const [anamnesisData, setAnamnesisData] = useState<InterceptiveAnamnesis>(() => {
-    if (patient.interceptiveAnamnesis) {
-      return {
-        ...defaultAnamnesis,
-        ...patient.interceptiveAnamnesis,
-        general: { ...defaultAnamnesis.general, ...(patient.interceptiveAnamnesis.general || {}) },
-        facial: { ...defaultAnamnesis.facial, ...(patient.interceptiveAnamnesis.facial || {}) },
-        occlusal: { ...defaultAnamnesis.occlusal, ...(patient.interceptiveAnamnesis.occlusal || {}) },
-      };
-    }
-    return defaultAnamnesis;
+
+
+  const [anamnesisData, setAnamnesisData] =
+  useState<InterceptiveAnamnesis>(() => ({
+    ...defaultAnamnesis,
+    ...(patient.interceptiveAnamnesis ?? {}),
+    general: {
+      ...defaultAnamnesis.general,
+      ...(patient.interceptiveAnamnesis?.general ?? {}),
+    },
+    facial: {
+      ...defaultAnamnesis.facial,
+      ...(patient.interceptiveAnamnesis?.facial ?? {}),
+    },
+    occlusal: {
+      ...defaultAnamnesis.occlusal,
+      ...(patient.interceptiveAnamnesis?.occlusal ?? {}),
+    },
+  }));
+
+useEffect(() => {
+  const saved = patient.interceptiveAnamnesis;
+
+  setAnamnesisData({
+    ...defaultAnamnesis,
+    ...(saved ?? {}),
+    general: {
+      ...defaultAnamnesis.general,
+      ...(saved?.general ?? {}),
+    },
+    facial: {
+      ...defaultAnamnesis.facial,
+      ...(saved?.facial ?? {}),
+    },
+    occlusal: {
+      ...defaultAnamnesis.occlusal,
+      ...(saved?.occlusal ?? {}),
+    },
   });
+}, []);
 
   const [activeSubTab, setActiveSubTab] = useState<'all' | 'general' | 'facial' | 'occlusal' | 'plan'>('all');
   const [isSavedRecently, setIsSavedRecently] = useState(false);

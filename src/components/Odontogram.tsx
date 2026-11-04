@@ -100,8 +100,6 @@ export const Odontogram: React.FC<OdontogramProps> = ({
     if (onChange) onChange(newOdontogram);
   const respuesta = await api.saveOdontogram(paciente,newOdontogram);
     setSelectedTooth(toothNum);
-
-
     if (onChange) {
             const odo:any = await api.getOdontogram(paciente);
             console.log("odo",odo.data)

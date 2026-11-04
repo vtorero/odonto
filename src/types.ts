@@ -82,6 +82,7 @@ export interface Patient {
   patientSignature?: string;
   doctorSignature?: string;
   officialTreatmentPlan?: StandardTreatmentRow[];
+  interceptiveAnamnesis?: InterceptiveAnamnesis;
 }
 
 export type ToothCondition =

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Patient,
   OdontogramData,
@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { Odontogram } from './Odontogram';
+import Swal from 'sweetalert2';
 
 interface OfficialDentalHistoryCardProps {
   patient: Patient;
@@ -87,6 +88,51 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
     }));
   });
 
+// Sincronizar la historia clínica cuando cambia el paciente
+useEffect(() => {
+
+  // Actualizar los datos personales y antecedentes
+  setFormData(
+    JSON.parse(JSON.stringify(patient))
+  );
+
+  // Actualizar el plan de tratamiento
+  if (
+    patient.officialTreatmentPlan &&
+    patient.officialTreatmentPlan.length > 0
+  ) {
+    setTreatmentRows(patient.officialTreatmentPlan);
+  } else {
+    setTreatmentRows(
+      defaultOdontodesaTreatmentCatalog.map((item) => ({
+        id: `std-tp-${item.itemNumber}`,
+        itemNumber: item.itemNumber,
+        name: item.name,
+        isOrthodontics: item.isOrthodontics,
+        orthoInitial: item.orthoInitial || 0,
+        orthoMonthly: item.orthoMonthly || 0,
+        quantity: 0,
+        unitPrice: item.unitPrice,
+        totalPrice: 0,
+        modifications: '',
+      }))
+    );
+  }
+
+  // Actualizar doctor responsable
+  setNewEvolutionDoctor(
+    patient.responsibleDoctor ||
+    clinicSettings.doctors[0]?.name ||
+    'Doctor Tratante'
+  );
+
+  // Limpiar estados de edición anteriores
+  setSelectedTooth(null);
+  setIsSavedRecently(false);
+
+}, [patient.id]);
+
+
   // Calculate age helper
   const calculateAge = (birthDateString?: string): string => {
     if (!birthDateString) return '-';
@@ -110,14 +156,14 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
   };
 
   // Helper for medical history subfields
-  const handleUpdateMedicalHistory = (
+  const handleUpdatemedicalhistory = (
     key: keyof Patient['medicalhistory'],
     value: any
   ) => {
     setFormData((prev) => ({
       ...prev,
-      medicalHistory: {
-        ...prev.medicalHistory,
+      medicalhistory: {
+        ...prev.medicalhistory,
         [key]: value,
       },
     }));
@@ -148,15 +194,26 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
     (acc, row) => acc + Number(row.totalPrice ?? 0),
     0
   );
+
   // Save all changes
-  const handleSaveAll = () => {
+  const handleSaveAll = async () => {
     const finalPatient: Patient = {
       ...formData,
       officialTreatmentPlan: treatmentRows,
     };
     onSavePatient(finalPatient);
-    setIsSavedRecently(true);
+    //setIsSavedRecently(true);
     setTimeout(() => setIsSavedRecently(false), 3000);
+    const respuesta = await api.savePatient(finalPatient);
+    console.log("respuesta",respuesta)
+
+    Swal.fire({
+      title: "Aviso",
+      text: "Paciente actualzado correctamente",
+      icon: "success",
+      confirmButtonText: 'Aceptar'
+      });
+
   };
 
   // Trigger print
@@ -299,7 +356,7 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                 activePage === 'page1' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              Pág 1: Anamnesis & Odontograma
+              Pág 1: Anamnesis
             </button>
             <button
               type="button"
@@ -474,7 +531,7 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                 <span className="font-bold whitespace-nowrap uppercase text-[11px]">PROFESIONAL RESPONSABLE:</span>
                 <input
                   type="text"
-                  value={formData.responsibleDoctor || clinicSettings.doctors[0]?.name || ''}
+                  value={formData.interceptiveAnamnesis?.evaluatorDoctor || clinicSettings.doctors[0]?.name || ''}
                   onChange={(e) => handleUpdateField('responsibleDoctor', e.target.value)}
                   className="flex-1 font-semibold uppercase bg-transparent outline-none px-1 text-slate-900"
                 />
@@ -520,9 +577,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                   <div className="flex items-center gap-1 shrink-0 font-bold">
                     <button
                       type="button"
-                      onClick={() => handleUpdateMedicalHistory('underTreatment', true)}
+                      onClick={() => handleUpdatemedicalhistory('underTreatment', true)}
                       className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                        formData.medicalHistory?.underTreatment
+                        formData.medicalhistory?.underTreatment
                           ? 'bg-slate-900 text-white font-bold border-slate-900'
                           : 'bg-white text-slate-700 border-slate-400'
                       }`}
@@ -531,9 +588,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleUpdateMedicalHistory('underTreatment', false)}
+                      onClick={() => handleUpdatemedicalhistory('underTreatment', false)}
                       className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                        formData.medicalHistory?.underTreatment === false
+                        formData.medicalhistory?.underTreatment === false
                           ? 'bg-slate-900 text-white font-bold border-slate-900'
                           : 'bg-white text-slate-700 border-slate-400'
                       }`}
@@ -548,9 +605,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                   <div className="flex items-center gap-1 shrink-0 font-bold">
                     <button
                       type="button"
-                      onClick={() => handleUpdateMedicalHistory('isAllergicToMedication', true)}
+                      onClick={() => handleUpdatemedicalhistory('isAllergicToMedication', true)}
                       className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                        formData.medicalHistory?.isAllergicToMedication || (formData.medicalHistory?.allergies && formData.medicalHistory.allergies.length > 0)
+                        formData.medicalhistory?.isAllergicToMedication || (formData.medicalhistory?.allergies && formData.medicalhistory.allergies.length > 0)
                           ? 'bg-rose-700 text-white font-bold border-rose-800'
                           : 'bg-white text-slate-700 border-slate-400'
                       }`}
@@ -559,9 +616,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleUpdateMedicalHistory('isAllergicToMedication', false)}
+                      onClick={() => handleUpdatemedicalhistory('isAllergicToMedication', false)}
                       className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                        formData.medicalHistory?.isAllergicToMedication === false && (!formData.medicalHistory?.allergies || formData.medicalHistory.allergies.length === 0)
+                        formData.medicalhistory?.isAllergicToMedication === false && (!formData.medicalhistory?.allergies || formData.medicalhistory.allergies.length === 0)
                           ? 'bg-slate-900 text-white font-bold border-slate-900'
                           : 'bg-white text-slate-700 border-slate-400'
                       }`}
@@ -575,8 +632,8 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                   <span className="font-medium whitespace-nowrap text-[10px] uppercase">¿QUÉ MEDICAMENTOS CONSUME HABITUALMENTE?:</span>
                   <input
                     type="text"
-                    value={formData.medicalHistory?.habitualMedications || formData.medicalHistory?.currentMedications?.join(', ') || ''}
-                    onChange={(e) => handleUpdateMedicalHistory('habitualMedications', e.target.value)}
+                    value={formData.medicalhistory?.habitualMedications || formData.medicalhistory?.currentMedications?.join(', ') || ''}
+                    onChange={(e) => handleUpdatemedicalhistory('habitualMedications', e.target.value)}
                     placeholder="Ninguno / Indicar dosis"
                     className="flex-1 bg-transparent outline-none text-[11px] text-slate-800"
                   />
@@ -587,9 +644,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                   <div className="flex items-center gap-1 shrink-0 font-bold">
                     <button
                       type="button"
-                      onClick={() => handleUpdateMedicalHistory('hasCardiacProblems', true)}
+                      onClick={() => handleUpdatemedicalhistory('hasCardiacProblems', true)}
                       className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                        formData.medicalHistory?.hasCardiacProblems || formData.medicalHistory?.hasCardiacDisease
+                        formData.medicalhistory?.hasCardiacProblems || formData.medicalhistory?.hasCardiacDisease
                           ? 'bg-slate-900 text-white font-bold border-slate-900'
                           : 'bg-white text-slate-700 border-slate-400'
                       }`}
@@ -598,9 +655,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleUpdateMedicalHistory('hasCardiacProblems', false)}
+                      onClick={() => handleUpdatemedicalhistory('hasCardiacProblems', false)}
                       className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                        formData.medicalHistory?.hasCardiacProblems === false && !formData.medicalHistory?.hasCardiacDisease
+                        formData.medicalhistory?.hasCardiacProblems === false && !formData.medicalhistory?.hasCardiacDisease
                           ? 'bg-slate-900 text-white font-bold border-slate-900'
                           : 'bg-white text-slate-700 border-slate-400'
                       }`}
@@ -615,9 +672,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                   <div className="flex items-center gap-1 shrink-0 font-bold">
                     <button
                       type="button"
-                      onClick={() => handleUpdateMedicalHistory('hasHighBloodPressure', true)}
+                      onClick={() => handleUpdatemedicalhistory('hasHighBloodPressure', true)}
                       className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                        formData.medicalHistory?.hasHighBloodPressure || formData.medicalHistory?.hasHypertension
+                        formData.medicalhistory?.hasHighBloodPressure || formData.medicalhistory?.hasHypertension
                           ? 'bg-slate-900 text-white font-bold border-slate-900'
                           : 'bg-white text-slate-700 border-slate-400'
                       }`}
@@ -626,9 +683,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleUpdateMedicalHistory('hasHighBloodPressure', false)}
+                      onClick={() => handleUpdatemedicalhistory('hasHighBloodPressure', false)}
                       className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                        formData.medicalHistory?.hasHighBloodPressure === false && !formData.medicalHistory?.hasHypertension
+                        formData.medicalhistory?.hasHighBloodPressure === false && !formData.medicalhistory?.hasHypertension
                           ? 'bg-slate-900 text-white font-bold border-slate-900'
                           : 'bg-white text-slate-700 border-slate-400'
                       }`}
@@ -643,9 +700,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                   <div className="flex items-center gap-1 shrink-0 font-bold">
                     <button
                       type="button"
-                      onClick={() => handleUpdateMedicalHistory('hasLowBloodPressure', true)}
+                      onClick={() => handleUpdatemedicalhistory('hasLowBloodPressure', true)}
                       className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                        formData.medicalHistory?.hasLowBloodPressure
+                        formData.medicalhistory?.hasLowBloodPressure
                           ? 'bg-slate-900 text-white font-bold border-slate-900'
                           : 'bg-white text-slate-700 border-slate-400'
                       }`}
@@ -654,9 +711,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleUpdateMedicalHistory('hasLowBloodPressure', false)}
+                      onClick={() => handleUpdatemedicalhistory('hasLowBloodPressure', false)}
                       className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                        formData.medicalHistory?.hasLowBloodPressure === false
+                        formData.medicalhistory?.hasLowBloodPressure === false
                           ? 'bg-slate-900 text-white font-bold border-slate-900'
                           : 'bg-white text-slate-700 border-slate-400'
                       }`}
@@ -677,9 +734,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                     <div className="flex items-center gap-1 font-bold">
                       <button
                         type="button"
-                        onClick={() => handleUpdateMedicalHistory('smokes', true)}
+                        onClick={() => handleUpdatemedicalhistory('smokes', true)}
                         className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                          formData.medicalHistory?.smokes || formData.medicalHistory?.isSmoker
+                          formData.medicalhistory?.smokes || formData.medicalhistory?.isSmoker
                             ? 'bg-slate-900 text-white border-slate-900'
                             : 'bg-white text-slate-700 border-slate-400'
                         }`}
@@ -688,9 +745,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleUpdateMedicalHistory('smokes', false)}
+                        onClick={() => handleUpdatemedicalhistory('smokes', false)}
                         className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                          formData.medicalHistory?.smokes === false && !formData.medicalHistory?.isSmoker
+                          formData.medicalhistory?.smokes === false && !formData.medicalhistory?.isSmoker
                             ? 'bg-slate-900 text-white border-slate-900'
                             : 'bg-white text-slate-700 border-slate-400'
                         }`}
@@ -705,9 +762,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                     <div className="flex items-center gap-1 font-bold">
                       <button
                         type="button"
-                        onClick={() => handleUpdateMedicalHistory('drinks', true)}
+                        onClick={() => handleUpdatemedicalhistory('drinks', true)}
                         className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                          formData.medicalHistory?.drinks
+                          formData.medicalhistory?.drinks
                             ? 'bg-slate-900 text-white border-slate-900'
                             : 'bg-white text-slate-700 border-slate-400'
                         }`}
@@ -716,9 +773,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleUpdateMedicalHistory('drinks', false)}
+                        onClick={() => handleUpdatemedicalhistory('drinks', false)}
                         className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                          formData.medicalHistory?.drinks === false
+                          formData.medicalhistory?.drinks === false
                             ? 'bg-slate-900 text-white border-slate-900'
                             : 'bg-white text-slate-700 border-slate-400'
                         }`}
@@ -737,9 +794,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                     <div className="flex items-center gap-1 font-bold">
                       <button
                         type="button"
-                        onClick={() => handleUpdateMedicalHistory('isPregnant', true)}
+                        onClick={() => handleUpdatemedicalhistory('isPregnant', true)}
                         className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                          formData.medicalHistory?.isPregnant
+                          formData.medicalhistory?.isPregnant
                             ? 'bg-slate-900 text-white border-slate-900'
                             : 'bg-white text-slate-700 border-slate-400'
                         }`}
@@ -748,9 +805,9 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleUpdateMedicalHistory('isPregnant', false)}
+                        onClick={() => handleUpdatemedicalhistory('isPregnant', false)}
                         className={`px-2 py-0.5 rounded-sm border text-[10px] ${
-                          formData.medicalHistory?.isPregnant === false
+                          formData.medicalhistory?.isPregnant === false
                             ? 'bg-slate-900 text-white border-slate-900'
                             : 'bg-white text-slate-700 border-slate-400'
                         }`}
@@ -764,8 +821,8 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                     <span className="whitespace-nowrap text-[10px]">¿CUÁNTOS MESES?:</span>
                     <input
                       type="text"
-                      value={formData.medicalHistory?.pregnancyMonths || ''}
-                      onChange={(e) => handleUpdateMedicalHistory('pregnancyMonths', e.target.value)}
+                      value={formData.medicalhistory?.pregnancyMonths || ''}
+                      onChange={(e) => handleUpdatemedicalhistory('pregnancyMonths', e.target.value)}
                       placeholder="N/A"
                       className="w-16 bg-transparent outline-none text-center font-bold text-slate-800"
                     />
@@ -794,12 +851,12 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                   { key: 'dolorCabeza', label: 'DOLOR DE CABEZA' },
                   { key: 'sinusitis', label: 'SINUSITIS' },
                 ].map((item) => {
-                  const isChecked = Boolean(formData.medicalHistory?.[item.key as keyof Patient['medicalhistory']]);
+                  const isChecked = Boolean(formData.medicalhistory?.[item.key as keyof Patient['medicalhistory']]);
                   return (
                     <button
                       key={item.key}
                       type="button"
-                      onClick={() => handleUpdateMedicalHistory(item.key as any, !isChecked)}
+                      onClick={() => handleUpdatemedicalhistory(item.key as any, !isChecked)}
                       className={`p-1.5 border border-slate-900 transition-colors flex flex-col items-center justify-center min-h-[36px] ${
                         isChecked ? 'bg-slate-900 text-white' : 'bg-white text-slate-800 hover:bg-slate-100'
                       }`}
@@ -815,8 +872,8 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
                   <span className="font-bold text-[10px]">OTROS:</span>
                   <input
                     type="text"
-                    value={formData.medicalHistory?.otros || ''}
-                    onChange={(e) => handleUpdateMedicalHistory('otros', e.target.value)}
+                    value={formData.medicalhistory?.otros || ''}
+                    onChange={(e) => handleUpdatemedicalhistory('otros', e.target.value)}
                     placeholder="Especifique..."
                     className="w-full text-[10px] bg-transparent outline-none font-normal"
                   />
@@ -825,177 +882,7 @@ export const OfficialDentalHistoryCard: React.FC<OfficialDentalHistoryCardProps>
             </div>
           </div>
 
-          {/* ODONTOGRAMA (FDI Anatomical Dental Chart matching Image 2) */}
-          <div className="border border-slate-800 rounded-lg p-3 space-y-3 text-xs">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-300 pb-1.5">
-              <h2 className="text-sm font-black tracking-wider uppercase text-slate-900">
-                ODONTOGRAMA
-              </h2>
 
-              {/* Condition Selector for rapid marking (Screen only) */}
-              <div className="flex flex-wrap items-center gap-1 text-[10px] print:hidden">
-                <span className="font-bold text-slate-600">Herramienta:</span>
-                {[
-                  { value: 'caries', label: 'Caries (Rojo)', color: 'bg-rose-500 text-white' },
-                  { value: 'restored', label: 'Obturado (Azul)', color: 'bg-sky-500 text-white' },
-                  { value: 'endodontics', label: 'Endodoncia', color: 'bg-purple-600 text-white' },
-                  { value: 'crown', label: 'Corona', color: 'bg-amber-500 text-white' },
-                  { value: 'extraction_needed', label: 'Extracción', color: 'bg-red-700 text-white' },
-                  { value: 'absent', label: 'Ausente', color: 'bg-slate-300 text-slate-700' },
-                  { value: 'implant', label: 'Implante', color: 'bg-emerald-600 text-white' },
-                ].map((cond) => (
-                  <button
-                    key={cond.value}
-                    type="button"
-                    onClick={() => setSelectedCondition(cond.value as ToothCondition)}
-                    className={`px-2 py-0.5 rounded-sm font-bold border transition-all ${
-                      selectedCondition === cond.value ? 'ring-2 ring-slate-900 shadow-xs' : 'opacity-80'
-                    } ${cond.color}`}
-                  >
-                    {cond.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Diagnostic Boxes Top */}
-            <div className="space-y-1">
-              <div className="grid grid-cols-16 gap-0.5 max-w-2xl mx-auto text-center text-[9px] font-mono font-bold">
-                {[...upperPermanentRight, ...upperPermanentLeft].map((tooth) => (
-                  <div key={`diag-top-${tooth}`} className="border border-slate-400 h-5 flex items-center justify-center bg-slate-50 text-slate-800">
-                    {odontogram[tooth]?.wholeToothCondition ? odontogram[tooth]?.wholeToothCondition?.[0].toUpperCase() : ''}
-                  </div>
-                ))}
-              </div>
-
-              {/* Numbers Upper Permanent */}
-              <div className="grid grid-cols-16 gap-0.5 max-w-2xl mx-auto text-center text-[10px] font-bold text-slate-700 border-b border-slate-300 pb-0.5">
-                {[...upperPermanentRight, ...upperPermanentLeft].map((tooth) => (
-                  <div key={`num-up-perm-${tooth}`}>{tooth}</div>
-                ))}
-              </div>
-
-              {/* Upper Permanent Teeth Graphics */}
-              <div className="grid grid-cols-16 gap-0.5 max-w-2xl mx-auto py-1">
-                {[...upperPermanentRight, ...upperPermanentLeft].map((tooth) => {
-                  const cond = odontogram[tooth]?.wholeToothCondition;
-                  return (
-                    <button
-                      key={`tooth-up-perm-${tooth}`}
-                      type="button"
-                      onClick={() => handleToothClick(tooth)}
-                      className={`h-9 border rounded-sm flex flex-col items-center justify-center transition-transform hover:scale-105 ${getConditionColor(
-                        cond
-                      )}`}
-                      title={`Pieza ${tooth}: ${cond || 'Sana'}`}
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                        <circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                        <path d="M10 3v14M3 10h14" stroke="currentColor" strokeWidth="1" />
-                      </svg>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Upper Deciduous (Temporary) */}
-              <div className="grid grid-cols-16 gap-0.5 max-w-2xl mx-auto text-center text-[9px] font-bold text-slate-600 pt-1">
-                <div className="col-span-3"></div>
-                {[...upperDeciduousRight, ...upperDeciduousLeft].map((tooth) => (
-                  <div key={`num-up-dec-${tooth}`}>{tooth}</div>
-                ))}
-                <div className="col-span-3"></div>
-              </div>
-
-              <div className="grid grid-cols-16 gap-0.5 max-w-2xl mx-auto pb-1 border-b border-dashed border-slate-300">
-                <div className="col-span-3"></div>
-                {[...upperDeciduousRight, ...upperDeciduousLeft].map((tooth) => {
-                  const cond = odontogram[tooth]?.wholeToothCondition;
-                  return (
-                    <button
-                      key={`tooth-up-dec-${tooth}`}
-                      type="button"
-                      onClick={() => handleToothClick(tooth)}
-                      className={`h-7 border rounded-sm flex items-center justify-center ${getConditionColor(
-                        cond
-                      )}`}
-                    >
-                      <span className="text-[9px] font-bold">{tooth}</span>
-                    </button>
-                  );
-                })}
-                <div className="col-span-3"></div>
-              </div>
-
-              {/* Lower Deciduous (Temporary) */}
-              <div className="grid grid-cols-16 gap-0.5 max-w-2xl mx-auto pt-1">
-                <div className="col-span-3"></div>
-                {[...lowerDeciduousRight, ...lowerDeciduousLeft].map((tooth) => {
-                  const cond = odontogram[tooth]?.wholeToothCondition;
-                  return (
-                    <button
-                      key={`tooth-low-dec-${tooth}`}
-                      type="button"
-                      onClick={() => handleToothClick(tooth)}
-                      className={`h-7 border rounded-sm flex items-center justify-center ${getConditionColor(
-                        cond
-                      )}`}
-                    >
-                      <span className="text-[9px] font-bold">{tooth}</span>
-                    </button>
-                  );
-                })}
-                <div className="col-span-3"></div>
-              </div>
-
-              <div className="grid grid-cols-16 gap-0.5 max-w-2xl mx-auto text-center text-[9px] font-bold text-slate-600 border-b border-slate-300 pb-0.5">
-                <div className="col-span-3"></div>
-                {[...lowerDeciduousRight, ...lowerDeciduousLeft].map((tooth) => (
-                  <div key={`num-low-dec-${tooth}`}>{tooth}</div>
-                ))}
-                <div className="col-span-3"></div>
-              </div>
-
-              {/* Lower Permanent Teeth Graphics */}
-              <div className="grid grid-cols-16 gap-0.5 max-w-2xl mx-auto py-1">
-                {[...lowerPermanentRight, ...lowerPermanentLeft].map((tooth) => {
-                  const cond = odontogram[tooth]?.wholeToothCondition;
-                  return (
-                    <button
-                      key={`tooth-low-perm-${tooth}`}
-                      type="button"
-                      onClick={() => handleToothClick(tooth)}
-                      className={`h-9 border rounded-sm flex flex-col items-center justify-center transition-transform hover:scale-105 ${getConditionColor(
-                        cond
-                      )}`}
-                      title={`Pieza ${tooth}: ${cond || 'Sana'}`}
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                        <circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                        <path d="M10 3v14M3 10h14" stroke="currentColor" strokeWidth="1" />
-                      </svg>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Numbers Lower Permanent */}
-              <div className="grid grid-cols-16 gap-0.5 max-w-2xl mx-auto text-center text-[10px] font-bold text-slate-700">
-                {[...lowerPermanentRight, ...lowerPermanentLeft].map((tooth) => (
-                  <div key={`num-low-perm-${tooth}`}>{tooth}</div>
-                ))}
-              </div>
-
-              {/* Diagnostic Boxes Bottom */}
-              <div className="grid grid-cols-16 gap-0.5 max-w-2xl mx-auto text-center text-[9px] font-mono font-bold pt-0.5">
-                {[...lowerPermanentRight, ...lowerPermanentLeft].map((tooth) => (
-                  <div key={`diag-bot-${tooth}`} className="border border-slate-400 h-5 flex items-center justify-center bg-slate-50 text-slate-800">
-                    {odontogram[tooth]?.wholeToothCondition ? odontogram[tooth]?.wholeToothCondition?.[0].toUpperCase() : ''}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
 
           {/* OBSERVACIONES Y CONSENTIMIENTO INFORMADO */}
           <div className="space-y-3 text-xs pt-2">

@@ -221,32 +221,21 @@ async saveInventoryItem(item:InventoryItem): Promise<InventoryItem> {
 
 
   async savePatient(patient: Patient): Promise<Patient> {
-
-    const isUpdate = patient.id && !patient.id.startsWith('pa-');
-
+   const isUpdate = patient.id && !patient.id.startsWith('pa-');
     const endpoint = isUpdate
       ? `${API_BASE_URL}/patients/${patient.id}`
       : `${API_BASE_URL}/patients`;
-
     const method = isUpdate ? 'PUT' : 'POST';
-
     const res = await fetch(endpoint, {
       method,
       headers: this.getHeaders(),
       body: JSON.stringify(patient),
     });
-    console.log("res",res);
     // Token caducado o inválido
     if (res.status === 401) {
       localStorage.removeItem('token');
       window.location.reload();
-      // Avisar a React
-      //window.dispatchEvent(new Event('auth-expired'));
-
-      //throw new Error('Sesión expirada');
-
     }
-
     if (!res.ok) {
       const errorText = await res.text();
       throw new Error(

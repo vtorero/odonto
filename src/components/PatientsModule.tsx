@@ -122,17 +122,19 @@ useEffect(() => {
 
     selectedPatientIdProp || patients[0]?.id || null
   );*/
-
+  const [selectedPatientId, setSelectedPatientId] = useState<Patient[]>(selectedPatientIdProp);
   useEffect(() => {
     if (selectedPatientIdProp) {
       setSelectedPatientId(selectedPatientIdProp);
 
     }
-  }, [selectedPatientIdProp]);
-  const [selectedPatientId, setSelectedPatientId] = useState<Patient[]>(selectedPatientIdProp);
+  }, [selectedPatientIdProp,selectedPatientId]);
+
+
+
   const clickPaciente =  async (id:string)=>{
     // setSelectedPatientId(id) ;
-     console.log("paciente seleccionado",id);
+
       try {
         const saved = await api.getPatientById(id);
         console.log("carga paciente",saved);
@@ -143,8 +145,10 @@ useEffect(() => {
       }
        try {
        const odo:any = await api.getOdontogram(id);
+
      // 3. Guardarlo en el estado
       setOdontogram(odo.data);
+     // setActiveTab('history');
     } catch (error) {
       console.error("Error cargando paciente/odontograma:", error);
       // Evita mostrar información anterior
@@ -407,21 +411,28 @@ useEffect(() => {
   };
 
   const handlePatientUpdated = (updatedPatient: Patient) => {
+
     console.log("Paciente actualizado:", updatedPatient);
 
-    // Actualizar paciente seleccionado
-    setSelectedPatientId(updatedPatient);
+    // Mantener el ID del paciente seleccionado
+    setSelectedPatientId(updatedPatient.id);
 
-    // Actualizar la lista local de pacientes
+    // Actualizar los datos en el directorio
     setPatients((prevPatients) =>
       prevPatients.map((p) =>
-        p.id === updatedPatient.id ? updatedPatient : p
+        p.id === updatedPatient.id
+          ? updatedPatient
+          : p
       )
     );
 
-    // Avisar al componente padre
+    // Notificar al componente principal
     onSavePatient(updatedPatient);
   };
+
+const prueba =(test)=>{
+  console.log("rwa",test);
+}
 
   return (
     <div className="space-y-6">
@@ -664,39 +675,7 @@ useEffect(() => {
                 </div>
 
                 {/* AI Assistant Quick Actions Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-gradient-to-r from-sky-50 to-indigo-50/50 border border-sky-100 rounded-xl">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-sky-900">
-                    <Sparkles className="w-4 h-4 text-sky-600" />
-                    <span>Asistente Clínico Inteligente:</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleCallAiAssistant('clinical_note')}
-                      className="px-2.5 py-1 text-xs bg-white hover:bg-sky-50 text-sky-700 border border-sky-200 rounded-lg font-medium shadow-2xs flex items-center gap-1.5"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-sky-600" />
-                      Redactar Nota Clínica
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCallAiAssistant('explain_treatment')}
-                      className="px-2.5 py-1 text-xs bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg font-medium shadow-2xs flex items-center gap-1.5"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                      Explicar Plan al Paciente
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCallAiAssistant('post_op_care')}
-                      className="px-2.5 py-1 text-xs bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-medium shadow-2xs flex items-center gap-1.5"
-                    >
-                      <Stethoscope className="w-3.5 h-3.5 text-emerald-600" />
-                      Guía Postoperatoria
-                    </button>
-                  </div>
-                </div>
-              </div>
+                        </div>
 
               {/* Navigation Tabs for Patient Submodules */}
               <div className="flex border-b border-slate-200 bg-white rounded-t-xl px-4 pt-2 gap-2 overflow-x-auto">
@@ -723,7 +702,7 @@ useEffect(() => {
                       : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Odontograma FDI
+                  Odontograma
                 </button>
                 <button
                   type="button"
@@ -736,7 +715,7 @@ useEffect(() => {
                 >
                   <Stethoscope className="w-3.5 h-3.5" />
                   Anamnesis Interceptiva
-                  <span className="bg-sky-100 text-sky-800 text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">
+              <span className="bg-sky-100 text-sky-800 text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">
 
                   </span>
                 </button>
@@ -803,12 +782,16 @@ useEffect(() => {
                   clinicSettings={clinicSettings}
                   onSavePatient={onSavePatient}
                   onBackToHistory={() => setActiveTab('history')}
+                  onChange={(newOdo) => {
+                    prueba(newOdo);
+                  }}
                 />
               )}
 
               {/* Tab 0: Official Odontodesa Clinical History (2 Pages) */}
               {activeTab === 'history' && selectedPatient && (
                 <OfficialDentalHistoryCard
+                key={selectedPatient.id}
                   patient={selectedPatient}
                   odontogram={currentOdontogram}
                   clinicalNotes={patientNotes}
@@ -819,16 +802,13 @@ useEffect(() => {
                       "Actualizando odontograma en estado:",
                       odo
                     );
-
                     // Actualizar estado local
                     setOdontogram(odo);
-
                     // Mantener callback original si existe
                     if (onSaveOdontogram) {
                       onSaveOdontogram(patId, odo);
                     }
                   }}
-
                         onSaveClinicalNote={(note) => {
                     if (onSaveClinicalNote) onSaveClinicalNote(note);
                   }}
